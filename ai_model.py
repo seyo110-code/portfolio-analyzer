@@ -317,6 +317,8 @@ def main():
                 changed = True
             else:
                 print(f"  → Fast 모델 변경 취소")
+    else:
+        test_model(fast_cur)
 
     new_pro = pick_model("Pro", pro_cur, models)
     if new_pro:
@@ -333,6 +335,8 @@ def main():
                 changed = True
             else:
                 print(f"  → Pro 모델 변경 취소")
+    else:
+        test_model(pro_cur)
 
     # ── 최종 요약 ─────────────────────────────────────────────
     print("\n" + "=" * 62)
