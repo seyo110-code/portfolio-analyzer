@@ -21,7 +21,7 @@ portfolio/
 
 ### 1. 패키지 설치
 ```bash
-pip install google-generativeai python-dotenv openpyxl pandas Pillow
+pip install google-genai python-dotenv openpyxl pandas Pillow
 ```
 
 ### 2. API 키 설정
