@@ -56,8 +56,8 @@ class GitHubClient(AIClient):
     """
     GitHub Models (https://models.github.ai/inference)
     - OpenAI 호환 API
-    - GITHUB_TOKEN 필요 (GitHub Settings → Developer settings → Personal access tokens)
-    - 모델명 형식: openai/gpt-4o-mini, meta/llama-3.3-70b-instruct 등
+    - GITHUB_TOKEN 필요 (gh auth token)
+    - 모델명 형식: openai/gpt-5-mini, meta/llama-3.3-70b-instruct 등
     """
     ENDPOINT = "https://models.github.ai/inference"
 

@@ -44,7 +44,7 @@ GITHUB_MODELS = [
 
 PROVIDER_DEFAULTS = {
     "gemini": ("gemini-2.5-flash", "gemini-2.5-pro"),
-    "github": ("openai/gpt-4o-mini", "openai/gpt-4o"),
+    "github": ("openai/gpt-5-mini", "openai/gpt-5-mini"),
 }
 
 TEST_TIMEOUT = 10  # 초
@@ -162,7 +162,8 @@ def setup_github_provider() -> bool:
              "-X", "POST",
              "-H", f"Authorization: Bearer {token}",
              "-H", "Content-Type: application/json",
-             "https://models.github.ai/inference/chat/completions",
+             "https://api.githubcopilot.com/chat/completions",
+             "-H", "Copilot-Integration-Id: vscode-chat",
              "-d", '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'],
             capture_output=True, text=True, timeout=10
         )
