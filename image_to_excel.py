@@ -8,10 +8,12 @@
   단일:  python3 image_to_excel.py screenshot.png
   다중:  python3 image_to_excel.py toss.png banksalad.png
   폴더:  python3 image_to_excel.py screenshots/
+  초기화: python3 image_to_excel.py 스샷.png --reset
 """
 import sys
 import os
 import json
+import argparse
 from PIL import Image
 from dotenv import load_dotenv
 from ai_client import get_client, get_fast_model
@@ -305,14 +307,19 @@ def cleanup_excel_duplicates(filepath: str = EXCEL_FILE) -> int:
 
 # ─── 미리보기 ────────────────────────────────────────────────
 
-def print_preview(final_items: list[dict], existing_names: set):
+def print_preview(final_items: list[dict], existing_names: set, reset: bool = False):
     print("\n" + "=" * 68)
     print("📋 적용 예정 데이터 미리보기")
+    if reset:
+        print("⚠️  초기화 모드: 기존 데이터가 모두 삭제됩니다")
     print("=" * 68)
     print(f"  {'상태':<6} {'종목명':<16} {'자산유형':<8} {'플랫폼':<12} {'평가금액(원)':>14}")
     print("-" * 68)
     for item in final_items:
-        status = "업데이트" if item["name"] in existing_names else "신규추가"
+        if reset:
+            status = "신규추가"
+        else:
+            status = "업데이트" if item["name"] in existing_names else "신규추가"
         print(f"  {status:<6} {item['name']:<16} {item['asset_type']:<8} "
               f"{item['platform']:<12} {item['eval_amount_krw']:>14,.0f}")
     print("=" * 68)
@@ -356,13 +363,20 @@ def write_row(ws, row_idx: int, item: dict):
         cell.alignment = center
 
 
-def update_excel(items: list[dict], filepath: str = EXCEL_FILE):
+def update_excel(items: list[dict], filepath: str = EXCEL_FILE, reset: bool = False):
     if not Path(filepath).exists():
         raise FileNotFoundError(f"{filepath} 없음. create_template.py 먼저 실행하세요.")
 
     wb = openpyxl.load_workbook(filepath)
     ws = wb[SHEET_NAME]
-    existing_map = get_existing_map(ws)
+
+    if reset:
+        # 2행부터 끝까지 데이터 삭제
+        if ws.max_row >= 2:
+            ws.delete_rows(2, ws.max_row - 1)
+        existing_map = {}
+    else:
+        existing_map = get_existing_map(ws)
 
     updated, added = [], []
     for item in items:
@@ -381,14 +395,33 @@ def update_excel(items: list[dict], filepath: str = EXCEL_FILE):
 # ─── 메인 ────────────────────────────────────────────────────
 
 def main():
-    if len(sys.argv) < 2:
-        print("사용법:")
-        print("  단일:  python3 image_to_excel.py screenshot.png")
-        print("  다중:  python3 image_to_excel.py toss.png banksalad.png")
-        print("  폴더:  python3 image_to_excel.py screenshots/")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="스크린샷 → 포트폴리오 자동 입력",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "사용법:\n"
+            "  단일:   python3 image_to_excel.py screenshot.png\n"
+            "  다중:   python3 image_to_excel.py toss.png banksalad.png\n"
+            "  폴더:   python3 image_to_excel.py screenshots/\n"
+            "  초기화: python3 image_to_excel.py 스샷.png --reset"
+        ),
+    )
+    parser.add_argument("images", nargs="+", help="분석할 이미지 파일 또는 폴더")
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="기존 포트폴리오 데이터를 모두 삭제하고 새로 시작",
+    )
+    args = parser.parse_args()
 
-    image_paths = collect_image_paths(sys.argv[1:])
+    if args.reset:
+        print("\n⚠️  초기화 모드: 기존 포트폴리오 데이터가 모두 삭제됩니다.")
+        confirm = input("정말 초기화하고 새로 시작할까요? (yes/n): ").strip().lower()
+        if confirm != "yes":
+            print("❌ 취소되었습니다.")
+            sys.exit(0)
+
+    image_paths = collect_image_paths(args.images)
     if not image_paths:
         print("❌ 처리할 이미지 파일이 없습니다.")
         sys.exit(1)
@@ -417,7 +450,7 @@ def main():
 
     # 기존 엑셀 종목명 (미리보기용)
     existing_names = set()
-    if Path(EXCEL_FILE).exists():
+    if not args.reset and Path(EXCEL_FILE).exists():
         try:
             wb = openpyxl.load_workbook(EXCEL_FILE)
             ws = wb[SHEET_NAME]
@@ -429,7 +462,7 @@ def main():
         except Exception:
             pass
 
-    print_preview(final_items, existing_names)
+    print_preview(final_items, existing_names, reset=args.reset)
 
     answer = input("\n위 내용을 엑셀에 적용할까요? (y/n): ").strip().lower()
     if answer != "y":
@@ -437,7 +470,7 @@ def main():
         sys.exit(0)
 
     print(f"\n💾 {EXCEL_FILE} 업데이트 중...")
-    updated, added = update_excel(final_items)
+    updated, added = update_excel(final_items, reset=args.reset)
 
     print("\n✅ 완료!")
     if updated:
