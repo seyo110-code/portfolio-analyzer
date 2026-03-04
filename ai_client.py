@@ -92,7 +92,8 @@ class GitHubClient(AIClient):
 
 def get_client() -> AIClient:
     """AI_PROVIDER 설정에 따라 적절한 클라이언트 반환"""
-    provider = AI_PROVIDER.lower()
+    load_dotenv(override=True)
+    provider = os.getenv("AI_PROVIDER", "gemini").lower()
     if provider == "gemini":
         return GeminiClient()
     elif provider == "github":
@@ -102,8 +103,10 @@ def get_client() -> AIClient:
 
 
 def get_fast_model() -> str:
-    return MODEL_FAST
+    load_dotenv(override=True)
+    return os.getenv("AI_MODEL_FAST", "gemini-2.5-flash")
 
 
 def get_pro_model() -> str:
-    return MODEL_PRO
+    load_dotenv(override=True)
+    return os.getenv("AI_MODEL_PRO", "gemini-2.5-pro")
